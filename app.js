@@ -3,7 +3,61 @@ const express = require("express");
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.get("/", (req, res) => res.type("html").send(html));
+const connect = require("./lib/connect");
+const Note = require("./models/Note");
+
+app.get("/", async (req, res) => {
+  await connect();
+  const notes = await Note.find();
+
+  if (!notes.length) {
+    return res.json({ message: "note not found" });
+  }
+
+  return res.json(notes);
+});
+
+app.get("/:id", async (req, res) => {
+  await connect();
+  const notes = await Note.find();
+
+  const { id } = req.params;
+  const content = await Note.find({ _id: id });
+
+  if (!content.length) {
+    return res.json({ message: "note not found" });
+  }
+
+  return res.json(content);
+});
+
+app.post("/", async (req, res) => {
+  await connect();
+  const { acknowledged, deletedCount } = await Note.insertMany({
+    content: { body },
+  });
+
+  if (!acknowledged || !deletedCount) {
+    res.json("Note not created.");
+  }
+
+  res.json({ acknowledged, deletedCount });
+});
+
+app.delete("/:tofu", async (req, res) => {
+  await connect();
+  const { tofu } = req.params;
+
+  const { acknowledged, deletedCount } = await Note.deleteOne({
+    _id: tofu,
+  });
+
+  if (!acknowledged || !deletedCount) {
+    res.json("Note not deleted.");
+  }
+
+  res.json({ acknowledged, deletedCount });
+});
 
 const server = app.listen(port, () =>
   console.log(`Express app listening on port ${port}!`)
