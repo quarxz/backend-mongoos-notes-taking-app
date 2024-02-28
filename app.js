@@ -2,9 +2,10 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const port = process.env.PORT || 3000;
-
+app.use(express.json());
 const connect = require("./lib/connect");
 const Note = require("./models/Note");
+const User = require("./models/User");
 
 app.get("/", async (req, res) => {
   await connect();
@@ -15,6 +16,36 @@ app.get("/", async (req, res) => {
   }
 
   return res.json(notes);
+});
+
+app.post("/:user", async (req, res) => {
+  await connect();
+  const { user } = req.params;
+
+  if (user) {
+    let { _id: userId } = (await User.findNote({ name: user })) || {
+      _id: null,
+    };
+
+    if (!user) {
+      const { _id: newUserId } = (await User.create({ name: user })) || {
+        _id: null,
+      };
+      userId = newUserId;
+    }
+    const { content } = request.body;
+
+    if (userId && content) {
+      const { _id } = (await Note.create({ connect, user: userId })) || {
+        _id: null,
+      };
+      response.json({ id: _id, message: "Successfully created node." });
+    } else {
+      response.json({
+        error: "Note NOT created. Content and/or id is missing.",
+      });
+    }
+  }
 });
 
 app.get("/:id", async (req, res) => {
@@ -33,15 +64,27 @@ app.get("/:id", async (req, res) => {
 
 app.post("/", async (req, res) => {
   await connect();
-  const { acknowledged, deletedCount } = await Note.insertMany({
-    content: { body },
+  const { content } = req.body; // Kommt von Curl -d "content"
+  const messageFromServer = await Note.create({
+    content: content,
   });
 
-  if (!acknowledged || !deletedCount) {
-    res.json("Note not created.");
+  res.json({ message: "Added!" });
+});
+
+app.put("/:id", async (req, res) => {
+  await connect();
+  const { id } = req.params;
+  const { content } = req.body;
+
+  const response = await Note.updateOne({ _id: id }, { content: content });
+  console.log(response);
+
+  if (response.modifiedCount === 0) {
+    return res.json("Note not Modified!");
   }
 
-  res.json({ acknowledged, deletedCount });
+  res.json({ message: "Note is Updated!" });
 });
 
 app.delete("/:tofu", async (req, res) => {
@@ -57,6 +100,20 @@ app.delete("/:tofu", async (req, res) => {
   }
 
   res.json({ acknowledged, deletedCount });
+});
+
+app.get("/search/:text", async (req, res) => {
+  await connect();
+  const { text } = req.params;
+  try {
+    const results = await Note.find({
+      content: { $regex: text, $options: "i" },
+    });
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status.apply(500).json({ message: "Server Error" });
+  }
 });
 
 const server = app.listen(port, () =>
