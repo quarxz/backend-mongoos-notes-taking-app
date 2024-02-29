@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const app = express();
+const cors = require("cors"); // Alle Browser haben Cross Origin Zugriff
 const port = process.env.PORT || 3000;
 app.use(express.json());
 const connect = require("./lib/connect");
