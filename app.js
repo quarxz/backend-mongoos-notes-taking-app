@@ -9,57 +9,111 @@ const User = require("./models/User");
 
 app.get("/", async (req, res) => {
   await connect();
-  const notes = await Note.find();
+  const notes = await Note.find().populate("user", "name");
 
   if (!notes.length) {
     return res.json({ message: "note not found" });
   }
 
-  return res.json(notes);
+  return res.json(notes.map((note) => ({ ...note._doc, id: note._id })));
 });
 
+/**
+ * create new document
+ * if user exists - new document in notes collection and reference to user
+ * if user !exists - new document in notes collection and reference to user and set new User in users
+ */
 app.post("/:user", async (req, res) => {
   await connect();
   const { user } = req.params;
 
   if (user) {
-    let { _id: userId } = (await User.findNote({ name: user })) || {
+    let { _id: userId } = (await User.findOne({ name: user })) || {
       _id: null,
     };
 
-    if (!user) {
+    if (!userId) {
       const { _id: newUserId } = (await User.create({ name: user })) || {
         _id: null,
       };
       userId = newUserId;
     }
-    const { content } = request.body;
+    const { content } = req.body;
 
     if (userId && content) {
-      const { _id } = (await Note.create({ connect, user: userId })) || {
+      const { _id } = (await Note.create({ content, user: userId })) || {
         _id: null,
       };
-      response.json({ id: _id, message: "Successfully created node." });
+      res.json({ id: _id, message: "Successfully created node." });
     } else {
-      response.json({
+      res.json({
         error: "Note NOT created. Content and/or id is missing.",
       });
     }
   }
 });
 
-app.get("/:id", async (req, res) => {
+app.get("/:user", async (req, res) => {
   await connect();
-  const notes = await Note.find();
+  const { user } = req.params;
 
-  const { id } = req.params;
-  const content = await Note.find({ _id: id });
+  const { _id: userId } = (await User.findOne({ name: user })) || {
+    _id: null,
+  };
 
-  if (!content.length) {
-    return res.json({ message: "note not found" });
+  // console.log({ _id: userId });
+
+  if (!userId) {
+    return res.json({
+      message: "Can´t show notes. User does not exists!",
+    });
   }
 
-  return res.json(content);
+  // find all notes belong to the user
+  const notes = await Note.find({ user: userId }).populate("user");
+  if (!notes.length) {
+    return res.json({ message: "No Notes found!" });
+  }
+  res.json(notes);
+});
+
+app.get("/:user/:id", async (req, res) => {
+  await connect();
+  const { user, id } = req.params;
+
+  const { _id: userId } = (await User.findOne({ name: user })) || {
+    _id: null,
+  };
+  if (!userId) {
+    return res.json({
+      message: "Cannot show notes. User does not exists!",
+    });
+  }
+
+  /**
+   * - Wenn keine Note mit id vorhanden
+   */
+  try {
+    const { _id } = (await Note.findOne({ _id: id })) || { _id: null };
+    console.log(_id);
+  } catch (err) {
+    console.error(err);
+    // return res.status.apply(500).json({ message: "Server Error" });
+    return res.json({ message: "Note does not exits!" });
+  }
+
+  const note = await Note.findOne({ _id: id }).populate("user", "name");
+
+  console.log(user, userId);
+  console.log(note.user.name);
+
+  if (user === note.user.name) {
+    return res.json(note);
+  } else {
+    return res.json({
+      message: "This Note doesn't belong to user: " + user,
+    });
+  }
 });
 
 app.post("/", async (req, res) => {
@@ -69,7 +123,7 @@ app.post("/", async (req, res) => {
     content: content,
   });
 
-  res.json({ message: "Added!" });
+  return res.json({ message: "Added!" });
 });
 
 app.put("/:id", async (req, res) => {
@@ -84,7 +138,7 @@ app.put("/:id", async (req, res) => {
     return res.json("Note not Modified!");
   }
 
-  res.json({ message: "Note is Updated!" });
+  return res.json({ message: "Note is Updated!" });
 });
 
 app.delete("/:tofu", async (req, res) => {
@@ -99,7 +153,7 @@ app.delete("/:tofu", async (req, res) => {
     res.json("Note not deleted.");
   }
 
-  res.json({ acknowledged, deletedCount });
+  return res.json({ acknowledged, deletedCount });
 });
 
 app.get("/search/:text", async (req, res) => {
@@ -109,10 +163,10 @@ app.get("/search/:text", async (req, res) => {
     const results = await Note.find({
       content: { $regex: text, $options: "i" },
     });
-    res.json(results);
+    return res.json(results);
   } catch (err) {
     console.error(err);
-    res.status.apply(500).json({ message: "Server Error" });
+    return res.status.apply(500).json({ message: "Server Error" });
   }
 });
 
