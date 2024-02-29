@@ -4,6 +4,7 @@ const app = express();
 const cors = require("cors"); // Alle Browser haben Cross Origin Zugriff
 const port = process.env.PORT || 3000;
 app.use(express.json());
+app.use(cors());
 const connect = require("./lib/connect");
 const Note = require("./models/Note");
 const User = require("./models/User");
