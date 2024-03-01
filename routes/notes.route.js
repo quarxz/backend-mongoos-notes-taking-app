@@ -20,9 +20,9 @@ r.post("/", async (req, res) => {
  * /:users kommt mit der index.js, /:id kommt aus der users.route.js
  */
 //code for vegan DELETE
-r.delete("/", async (request, response) => {
+r.delete("/", async (req, res) => {
   await connect();
-  const { user, id } = request.params;
+  const { user, id } = req.params;
 
   const { _id: userId } = (await User.findOne({ name: user })) || { _id: null };
 

@@ -69,10 +69,6 @@ r.get("/:id", async (req, res) => {
     content,
   } = (await Note.findOne({ _id: id }).populate("user", "name")) || { _id: null, user: null };
 
-  console.log(noteId);
-  console.log(userOfNote.name);
-  console.log(user);
-
   if (!noteId || userOfNote.name != user) {
     return res
       .status(401)
@@ -117,7 +113,7 @@ r.post("/", async (req, res) => {
       const { _id } = (await Note.create({ content, user: userId })) || {
         _id: null,
       };
-      return res.status(200).json({ id: _id, message: "Successfully created node." });
+      return res.status(200).json({ id: _id, message: "Successfully created note." });
     } else {
       return res.status(400).json({
         error: "Note NOT created. Content and/or id is missing.",
