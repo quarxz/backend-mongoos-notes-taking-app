@@ -26,12 +26,12 @@ r.get("/", async (req, res) => {
   }
 
   // find all notes belong to the user
-  const notes = await Note.find({ user: userId }).populate("user");
+  const notes = await Note.find({ user: userId }).populate("user", "name");
   if (!notes.length) {
     return res.status(404).json({ message: "No Notes found!" });
   }
 
-  res.status(200).json(notes.map((note) => ({ ...note._doc, id: note._id })));
+  res.status(200).json(notes.map((note) => ({ ...note._doc, id: note._id, name: note.user.name })));
 });
 
 /**
