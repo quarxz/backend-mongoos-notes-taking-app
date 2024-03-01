@@ -29,19 +29,18 @@ r.use("/:user", users);
 r.get("/", async (req, res) => {
   await connect();
 
+  // show users
   const users = await User.find();
   if (!users.length) {
     return res.status(404).json({ message: "Users not found" });
   }
 
-  const notes = await Note.find().populate("user", "name");
+  return res.status(200).json(users.map((note) => ({ ...note._doc, id: note._id })));
 
-  if (!notes.length) {
-    return res.status(404).json({ message: "note not found" });
-  }
-  console.log(notes);
-  return res.json(notes);
-
+  // const notes = await Note.find().populate("user", "name");
+  // if (!notes.length) {
+  //   return res.status(404).json({ message: "note not found" });
+  // }
   // return res.status(200).json(notes.map((note) => ({ ...note._doc, id: note._id })));
 });
 
