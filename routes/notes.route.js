@@ -1,6 +1,7 @@
 const { Router } = require("express");
 const connect = require("../lib/connect");
 const Note = require("../models/Note");
+const User = require("../models/User");
 
 const r = Router({ mergeParams: true });
 
@@ -11,51 +12,67 @@ r.post("/", async (req, res) => {
     content: content,
   });
 
-  return res.json({ message: "Added!" });
+  return res.status(200).json({ message: "Added!" });
 });
 
-r.put("/:id", async (req, res) => {
+/**
+ * Delete specific User Note /Falk/idxyz
+ * /:users kommt mit der index.js, /:id kommt aus der users.route.js
+ */
+//code for vegan DELETE
+r.delete("/", async (request, response) => {
   await connect();
-  const { id } = req.params;
+  const { user, id } = request.params;
+
+  const { _id: userId } = (await User.findOne({ name: user })) || { _id: null };
+
+  if (!userId) {
+    return res.status(404).json({ message: "Could not find user." });
+  }
+
+  const { _id: noteId, user: userOfNote } = (await Note.findOne({
+    _id: id,
+  }).populate("user", "name")) || { _id: null, user: null }; // replacement object
+
+  if (!noteId || userOfNote.name != user) {
+    return res.status(401).json({
+      message: "That note either does not exist or belong to that user.",
+    });
+  }
+
+  await Note.deleteOne({ _id: id });
+
+  res.status(200).json({ message: "Note was deleted successfully." });
+});
+
+r.put("/", async (req, res) => {
+  await connect();
+  const { id, user } = req.params;
   const { content } = req.body;
 
-  const response = await Note.updateOne({ _id: id }, { content: content });
-  console.log(response);
+  const { _id: userId } = (await User.findOne({ name: user })) || { _id: null };
 
-  if (response.modifiedCount === 0) {
-    return res.json("Note not Modified!");
+  if (!userId) {
+    return res.status(404).json({ message: "Could not find user." });
   }
 
-  return res.json({ message: "Note is Updated!" });
-});
+  const { _id: noteId, user: userOfNote } = (await Note.findOne({
+    _id: id,
+  }).populate("user", "name")) || { _id: null, user: null };
 
-r.delete("/:tofu", async (req, res) => {
-  await connect();
-  const { tofu } = req.params;
-
-  const { acknowledged, deletedCount } = await Note.deleteOne({
-    _id: tofu,
-  });
-
-  if (!acknowledged || !deletedCount) {
-    res.json("Note not deleted.");
-  }
-
-  return res.json({ acknowledged, deletedCount });
-});
-
-r.get("/search/:text", async (req, res) => {
-  await connect();
-  const { text } = req.params;
-  try {
-    const results = await Note.find({
-      content: { $regex: text, $options: "i" },
+  if (!noteId || userOfNote.name != user) {
+    return res.status(401).json({
+      message: "That note either does not exist or belong to that user.",
     });
-    return res.json(results);
-  } catch (err) {
-    console.error(err);
-    return res.status.apply(500).json({ message: "Server Error" });
   }
+
+  const { _id } = await Note.findByIdAndUpdate(id, { content });
+
+  if (!_id) {
+    return res.status(404).json({ message: "Note not found" });
+  }
+
+  return res.status(200).json({ message: "Successfully edited the note." });
 });
 
 module.exports = r;
