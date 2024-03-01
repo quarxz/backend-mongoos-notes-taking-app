@@ -27,7 +27,7 @@ r.delete("/", async (req, res) => {
   const { _id: userId } = (await User.findOne({ name: user })) || { _id: null };
 
   if (!userId) {
-    return res.status(404).json({ message: "Could not find user." });
+    return res.status(404).json({ message: "Could not find user!" });
   }
 
   const { _id: noteId, user: userOfNote } = (await Note.findOne({
@@ -36,13 +36,13 @@ r.delete("/", async (req, res) => {
 
   if (!noteId || userOfNote.name != user) {
     return res.status(401).json({
-      message: "That note either does not exist or belong to that user.",
+      message: "That note either does not exist or belong to that user!",
     });
   }
 
   await Note.deleteOne({ _id: id });
 
-  res.status(200).json({ message: "Note was deleted successfully." });
+  res.status(200).json({ message: "Note was deleted successfully!" });
 });
 
 r.put("/", async (req, res) => {
@@ -53,7 +53,7 @@ r.put("/", async (req, res) => {
   const { _id: userId } = (await User.findOne({ name: user })) || { _id: null };
 
   if (!userId) {
-    return res.status(404).json({ message: "Could not find user." });
+    return res.status(404).json({ message: "Could not find user!" });
   }
 
   const { _id: noteId, user: userOfNote } = (await Note.findOne({
@@ -62,17 +62,17 @@ r.put("/", async (req, res) => {
 
   if (!noteId || userOfNote.name != user) {
     return res.status(401).json({
-      message: "That note either does not exist or belong to that user.",
+      message: "That note either does not exist or belong to that user!",
     });
   }
 
   const { _id } = await Note.findByIdAndUpdate(id, { content });
 
   if (!_id) {
-    return res.status(404).json({ message: "Note not found" });
+    return res.status(404).json({ message: "Note not found!" });
   }
 
-  return res.status(200).json({ message: "Successfully edited the note." });
+  return res.status(200).json({ message: "Successfully edited the note!" });
 });
 
 module.exports = r;

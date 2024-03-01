@@ -72,7 +72,7 @@ r.get("/:id", async (req, res) => {
   if (!noteId || userOfNote.name != user) {
     return res
       .status(401)
-      .json({ message: "That note either does not exist or belong to that user." });
+      .json({ message: "That note either does not exist or belong to that user!" });
   }
 
   return res.status(200).json({ _id: noteId, content, user: userOfNote });
@@ -113,15 +113,15 @@ r.post("/", async (req, res) => {
       const { _id } = (await Note.create({ content, user: userId })) || {
         _id: null,
       };
-      return res.status(200).json({ id: _id, message: "Successfully created note." });
+      return res.status(200).json({ id: _id, message: "Successfully created note1!" });
     } else {
       return res.status(400).json({
-        error: "Note NOT created. Content and/or id is missing.",
+        error: "Note NOT created. Content and/or id is missing!",
       });
     }
   }
 
-  res.status(400).json({ message: "Couldn't create new note. User is missing." });
+  res.status(400).json({ message: "Couldn't create new note. User is missing!" });
 });
 
 module.exports = r;
